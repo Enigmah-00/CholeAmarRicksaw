@@ -13,19 +13,31 @@ public class InputHandler : MonoBehaviour
     {
         if (carHandler == null)
         {
+            // Try to find in parent first
             carHandler = GetComponentInParent<CarHandler>();
         }
         if (carHandler == null)
         {
+            // Try in same GameObject
             carHandler = GetComponent<CarHandler>();
         }
         if (carHandler == null)
         {
-            carHandler = FindObjectOfType<CarHandler>();
+            // Try in children
+            carHandler = GetComponentInChildren<CarHandler>();
         }
         if (carHandler == null)
         {
-            Debug.LogError("InputHandler: CarHandler reference not set and not found in parent or self.");
+            // Last resort: find anywhere in scene
+            carHandler = FindAnyObjectByType<CarHandler>();
+        }
+        if (carHandler == null)
+        {
+            Debug.LogError("InputHandler: CarHandler not found! Make sure CarHandler script is attached to the player car.");
+        }
+        else
+        {
+            Debug.Log($"InputHandler: Successfully found CarHandler on {carHandler.gameObject.name}");
         }
     }
 
