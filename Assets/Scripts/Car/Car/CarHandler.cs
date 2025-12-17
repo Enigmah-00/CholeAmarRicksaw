@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
 public class CarHandler : MonoBehaviour
 {
     [SerializeField]
@@ -11,147 +10,115 @@ public class CarHandler : MonoBehaviour
     [SerializeField]
     Transform gameModel;
 
-    [SerializeField]
-    [Tooltip("Subtle rotation angle when steering sideways")]
-    float maxTiltAngle = 10f;
-
-    [Header("Movement")]
-    [SerializeField]
-    float maxForwardSpeed = 30f;
-
-    [SerializeField]
-    float forwardAcceleration = 20f;
-
-    [SerializeField]
-    float brakeAcceleration = 35f;
-
-    [Header("Steering")]
-    [SerializeField]
-    float maxLateralSpeed = 3f;
-
-    [SerializeField]
-    float lateralResponsiveness = 12f;
-
-    [SerializeField]
-    float lateralDrag = 8f;
-
-    [Header("Auto Center")]
-    [SerializeField]
-    bool autoCenterToRoad = true;
-
-    [SerializeField]
-    float roadCenterX = 0f;
-
-    [SerializeField]
-    float centerStrength = 6f;
-
-    [SerializeField]
-    float centerDamping = 3f;
-
-    [SerializeField]
-    [Range(0f, 0.5f)]
-    float inputDeadzone = 0.05f;
+    // [SerializeField]
+    // [Tooltip("Subtle rotation angle when steering sideways")]
+    // float maxTiltAngle = 10f;
 
     // Cache the model's original local rotation so we can tilt relative to it
     Quaternion modelBaseRotation;
 
+    Quaternion rbBaseRotation;
+
+    float maxSteerVelocity = 2;
+    float maxForwardVelocity = 30;
+
+    float accelerationMultiplier = 3;
+    float brakeMultiplier = 15;
+    float steeringMultiplier = 10;
+
+    // [SerializeField, Range(0f, 0.5f)]
+    // float inputDeadZone = 0.1f;
+
     Vector2 input = Vector2.zero;
-    void Awake()
+    void Start()
     {
-        if (rb == null)
-            rb = GetComponent<Rigidbody>();
-
-        if (gameModel == null)
-            gameModel = transform;
-
-        modelBaseRotation = gameModel.localRotation;
-
-        // Keep the body from tipping/rotating; we only tilt the visual model.
-        rb.constraints |= RigidbodyConstraints.FreezeRotation;
-        // Optional but useful for flat-road gameplay
-        rb.constraints |= RigidbodyConstraints.FreezePositionY;
-
-        // Default stability
-        rb.linearDamping = Mathf.Max(rb.linearDamping, 0.0f);
+        rbBaseRotation = rb.rotation;
     }
 
     void Update()
     {
-        // Subtle rotation based on sideways velocity - smoothly interpolated
-        float lateralNormalized = (maxLateralSpeed <= 0.001f)
-            ? 0f
-            : Mathf.Clamp(rb.linearVelocity.x / maxLateralSpeed, -1f, 1f);
-        float tiltAngle = lateralNormalized * maxTiltAngle;
-        Quaternion targetRotation = modelBaseRotation * Quaternion.Euler(0, tiltAngle, 0);
-        gameModel.transform.localRotation = Quaternion.Lerp(
-            gameModel.transform.localRotation,
-            targetRotation,
-            Time.deltaTime * 5f
-        );
+        // Keep visual rotation stable; steering is handled via lateral motion.
+        // gameModel.transform.rotation = Quaternion.Euler(0,rb.linearVelocity.x*2,0);
     }
 
     void FixedUpdate()
     {
-        // Always constrain movement to X/Z plane
-        Vector3 velocity = rb.linearVelocity;
-        velocity.y = 0f;
-
-        float steerInput = Mathf.Abs(input.x) < inputDeadzone ? 0f : input.x;
-        float throttleInput = Mathf.Abs(input.y) < inputDeadzone ? 0f : input.y;
-
-        ApplyForwardForces(throttleInput, velocity);
-        ApplyLateralForces(steerInput, velocity);
-
-        // Clamp speeds (no reverse)
-        velocity = rb.linearVelocity;
-        velocity.y = 0f;
-        velocity.z = Mathf.Clamp(velocity.z, 0f, maxForwardSpeed);
-        velocity.x = Mathf.Clamp(velocity.x, -maxLateralSpeed, maxLateralSpeed);
-        rb.linearVelocity = velocity;
-    }
-
-    void ApplyForwardForces(float throttleInput, Vector3 velocity)
-    {
-        if (throttleInput > 0f)
+        // Always constrain movement to Z-axis (forward) and X-axis (sideways only)
+        // Lock Y velocity to prevent flying
+        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+        
+        // Keep rotation locked (no yaw feedback from sideways velocity)
+        rb.angularVelocity = Vector3.zero;
+        rb.rotation = rbBaseRotation;
+        
+        if (input.y > 0)
         {
-            if (velocity.z < maxForwardSpeed)
-                rb.AddForce(Vector3.forward * (forwardAcceleration * throttleInput), ForceMode.Acceleration);
-        }
-        else if (throttleInput < 0f)
-        {
-            // Brake harder, but never push into reverse
-            if (velocity.z > 0f)
-                rb.AddForce(Vector3.forward * (brakeAcceleration * throttleInput), ForceMode.Acceleration);
+            Accelarate();
         }
         else
         {
-            // Gentle forward drag when not accelerating
-            rb.AddForce(Vector3.forward * (-velocity.z * 0.5f), ForceMode.Acceleration);
+            // Don't add extra drag just because we're steering.
+            rb.linearDamping = Mathf.Abs(input.x) > 0 ? 0f : 0.2f;
+        }
+
+        if(input.y < 0) Brake();
+        Steer();
+        if(rb.linearVelocity.z <= 0){
+            rb.linearVelocity = Vector3.zero;
         }
     }
 
-    void ApplyLateralForces(float steerInput, Vector3 velocity)
+    void Accelarate()
     {
-        // Target lateral speed from steering input
-        float desiredX = steerInput * maxLateralSpeed;
-        float deltaX = desiredX - velocity.x;
+        rb.linearDamping = 0;
+        if(rb.linearVelocity.z >= maxForwardVelocity)
+            return;
+        // Always push along world Z so the rickshaw moves frontward
+        rb.AddForce(rb.transform.forward * accelerationMultiplier * input.y);
+    }
 
-        // Move toward desired lateral speed
-        rb.AddForce(Vector3.right * (deltaX * lateralResponsiveness), ForceMode.Acceleration);
-
-        // Always apply lateral drag to kill drift
-        rb.AddForce(Vector3.right * (-velocity.x * lateralDrag), ForceMode.Acceleration);
-
-        // If no steering, softly pull back to the road center so you re-align after going off-road
-        if (autoCenterToRoad && Mathf.Abs(steerInput) < 0.001f)
+    void Brake()
+    {
+        if(rb.linearVelocity.z <= 0)
         {
-            float error = roadCenterX - rb.position.x;
-            float centerAccel = (error * centerStrength) - (velocity.x * centerDamping);
-            rb.AddForce(Vector3.right * centerAccel, ForceMode.Acceleration);
+            return;
         }
+         rb.AddForce(Vector3.forward * brakeMultiplier * input.y);
+    }
+    void Steer()
+    {
+        float speedBaseSteerLimit = Mathf.Clamp01(rb.linearVelocity.z / 5.0f);
+
+        float currentX = rb.linearVelocity.x;
+
+        if (Mathf.Abs(input.x) > 0)
+        {
+            float targetX = input.x * maxSteerVelocity * speedBaseSteerLimit;
+
+            // If the player changes direction, don't allow an initial "wrong way" slide.
+            if (Mathf.Abs(currentX) > 0.01f && Mathf.Sign(currentX) != Mathf.Sign(targetX))
+            {
+                currentX = 0f;
+            }
+
+            float newX = Mathf.MoveTowards(currentX, targetX, steeringMultiplier * Time.fixedDeltaTime);
+            rb.linearVelocity = new Vector3(newX, 0, rb.linearVelocity.z);
+        }
+        else
+        {
+            float newX = Mathf.MoveTowards(currentX, 0f, 3f * Time.fixedDeltaTime);
+            rb.linearVelocity = new Vector3(newX, 0, rb.linearVelocity.z);
+        }
+
     }
     public void SetInput(Vector2 inputVector)
     {
-        input = Vector2.ClampMagnitude(inputVector, 1f);
+        // Don't normalize - we want to keep the input magnitude.
+        // Apply a deadzone so steering doesn't accidentally register as braking.
+        // float x = Mathf.Abs(inputVector.x) < inputDeadZone ? 0f : inputVector.x;
+        // float y = Mathf.Abs(inputVector.y) < inputDeadZone ? 0f : inputVector.y;
+        // input = new Vector2(Mathf.Clamp(x, -1f, 1f), Mathf.Clamp(y, -1f, 1f));
+        inputVector.Normalize();
+        input = inputVector;
     }
 }
