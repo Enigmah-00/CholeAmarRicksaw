@@ -102,7 +102,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d1c4a7c2bb3483abd9cb05db2ac7b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RandomizeObject
-  localRotationMin: {x: 0, y: 0, z: 0}
-  localRotationMax: {x: 0, y: 0, z: 0}
+  localRotationMin: {x: -10, y: 0, z: -10}
+  localRotationMax: {x: 10, y: 360, z: 10}
   localscaleMultiplierMin: 0.8
   localscaleMultiplierMax: 1.5

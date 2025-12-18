@@ -10,6 +10,9 @@ public class CarHandler : MonoBehaviour
     [SerializeField]
     Transform gameModel;
 
+    [SerializeField]
+    MeshRenderer carMeshRenderer;
+
     // [SerializeField]
     // [Tooltip("Subtle rotation angle when steering sideways")]
     // float maxTiltAngle = 10f;
@@ -30,6 +33,10 @@ public class CarHandler : MonoBehaviour
     // float inputDeadZone = 0.1f;
 
     Vector2 input = Vector2.zero;
+
+    int _EmissionColor = Shader.PropertyToID("_EmissionColor");
+    Color emmisiveColor = Color.white;
+    float emmisiveColorMultiplier = 0f;
     void Start()
     {
         rbBaseRotation = rb.rotation;
@@ -38,18 +45,26 @@ public class CarHandler : MonoBehaviour
     void Update()
     {
         // Keep visual rotation stable; steering is handled via lateral motion.
-        // gameModel.transform.rotation = Quaternion.Euler(0,rb.linearVelocity.x*2,0);
+        gameModel.transform.rotation = Quaternion.Euler(0,rb.linearVelocity.x*5,0);
+        if(carMeshRenderer != null)
+        {
+            float desiredCarEmmisiveColorMultiplier = 0f;
+            if(input.y < 0) desiredCarEmmisiveColorMultiplier = 4.0f;
+            emmisiveColorMultiplier = Mathf.Lerp(emmisiveColorMultiplier,desiredCarEmmisiveColorMultiplier,Time.deltaTime*4);
+            carMeshRenderer.material.SetColor(_EmissionColor,emmisiveColor*emmisiveColorMultiplier);
+
+        }
     }
 
     void FixedUpdate()
     {
         // Always constrain movement to Z-axis (forward) and X-axis (sideways only)
         // Lock Y velocity to prevent flying
-        rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
+        // rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
         
         // Keep rotation locked (no yaw feedback from sideways velocity)
-        rb.angularVelocity = Vector3.zero;
-        rb.rotation = rbBaseRotation;
+        // rb.angularVelocity = Vector3.zero;
+        // rb.rotation = rbBaseRotation;
         
         if (input.y > 0)
         {
