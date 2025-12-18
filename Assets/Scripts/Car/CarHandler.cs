@@ -13,6 +13,11 @@ public class CarHandler : MonoBehaviour
     [SerializeField]
     MeshRenderer carMeshRenderer;
 
+    [SerializeField]
+    ExplodeHandler explodeHandler;
+
+
+
     // [SerializeField]
     // [Tooltip("Subtle rotation angle when steering sideways")]
     // float maxTiltAngle = 10f;
@@ -37,13 +42,16 @@ public class CarHandler : MonoBehaviour
     int _EmissionColor = Shader.PropertyToID("_EmissionColor");
     Color emmisiveColor = Color.white;
     float emmisiveColorMultiplier = 0f;
+
+    bool isExploded = false;
     void Start()
     {
-        rbBaseRotation = rb.rotation;
+        // rbBaseRotation = rb.rotation;
     }
 
     void Update()
     {
+        if(isExploded) return;
         // Keep visual rotation stable; steering is handled via lateral motion.
         gameModel.transform.rotation = Quaternion.Euler(0,rb.linearVelocity.x*5,0);
         if(carMeshRenderer != null)
@@ -58,6 +66,12 @@ public class CarHandler : MonoBehaviour
 
     void FixedUpdate()
     {
+        if(isExploded){
+            rb.linearDamping = rb.linearVelocity.z * 0.1f;
+            rb.linearDamping = Mathf.Clamp(rb.linearDamping,1.5f,10);
+            rb.MovePosition(Vector3.Lerp(transform.position,new Vector3(0,0,transform.position.z),Time.deltaTime*0.5f));
+            return;
+        }
         // Always constrain movement to Z-axis (forward) and X-axis (sideways only)
         // Lock Y velocity to prevent flying
         // rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
@@ -135,5 +149,18 @@ public class CarHandler : MonoBehaviour
         // input = new Vector2(Mathf.Clamp(x, -1f, 1f), Mathf.Clamp(y, -1f, 1f));
         inputVector.Normalize();
         input = inputVector;
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (isExploded) return;
+        if (explodeHandler == null) return;
+
+        // Only explode on high-speed collisions with obstacles (not ground/static objects)
+        if (collision.gameObject.CompareTag("Obstacle"))
+        {
+            Vector3 velocity = rb.linearVelocity;
+            explodeHandler.Explode(velocity * 45);
+            isExploded = true;
+        }
     }
 }
