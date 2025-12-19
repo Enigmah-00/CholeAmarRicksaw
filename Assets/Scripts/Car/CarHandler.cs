@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class CarHandler : MonoBehaviour
 {
@@ -45,13 +46,23 @@ public class CarHandler : MonoBehaviour
     float emmisiveColorMultiplier = 0f;
 
     bool isExploded = false;
+    bool isPlayer = true;
     void Start()
     {
         // rbBaseRotation = rb.rotation;
+        isPlayer = CompareTag("Player");
     }
 
     void Update()
     {
+        // Reset game on R key press after exploding
+        if (isExploded && isPlayer && Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
+        {
+            Time.timeScale = 1.0f; // Reset time scale
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            return;
+        }
+
         if(isExploded) return;
         // Keep visual rotation stable; steering is handled via lateral motion.
         gameModel.transform.rotation = Quaternion.Euler(0,rb.linearVelocity.x*5,0);
@@ -152,6 +163,9 @@ public class CarHandler : MonoBehaviour
         input = inputVector;
     }
 
+    public void SetMaxSpeed(float newMaxSpeed){
+        maxForwardVelocity = newMaxSpeed;
+    }
     IEnumerator SlowDownTimeCO(){
         while (Time.timeScale > 0.2f){
             Time.timeScale -= Time.deltaTime* 2;
@@ -170,13 +184,42 @@ public class CarHandler : MonoBehaviour
         if (isExploded) return;
         if (explodeHandler == null) return;
 
-        // Only explode on high-speed collisions with obstacles (not ground/static objects)
-        if (collision.gameObject.CompareTag("Obstacle"))
+        // Try to get tag from both the colliding object and its root
+        GameObject other = collision.gameObject;
+        string otherTag = other.tag;
+        if (otherTag == "Untagged" && other.transform.root != null)
+        {
+            otherTag = other.transform.root.tag;
+        }
+
+        // Ignore collisions with ground/static objects
+        if (otherTag == "Untagged" || otherTag == "Ground") return;
+
+        // Explode on: Obstacle, or Player-AI collision only (no AI-AI collision)
+        bool shouldExplode = false;
+
+        if (otherTag == "Obstacle")
+        {
+            shouldExplode = true;
+        }
+        else if (isPlayer && otherTag == "CarAI")
+        {
+            shouldExplode = true; // Player hits AI car
+        }
+        else if (!isPlayer && otherTag == "Player")
+        {
+            shouldExplode = true; // AI car hits Player only (not other AI cars)
+        }
+
+        if (shouldExplode)
         {
             Vector3 velocity = rb.linearVelocity;
             explodeHandler.Explode(velocity * 45);
             isExploded = true;
-            StartCoroutine(SlowDownTimeCO());
+            if (isPlayer)
+            {
+                StartCoroutine(SlowDownTimeCO());
+            }
         }
     }
 }
