@@ -7,11 +7,13 @@ TagManager:
   - Obstacle
   - CarAI
   - CarPart
+  - Ground
+  - Building
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Ground
   - Water
   - UI
   - Car

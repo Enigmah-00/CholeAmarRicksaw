@@ -9,8 +9,29 @@ EditorBuildSettings:
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
   - enabled: 1
-    path: Assets/_Recovery/0.unity
+    path: Assets/Scenes/LevelScenes/Main_Manu.unity
+    guid: 133e4e5179cf3489e80e562eb6fbeabd
+  - enabled: 1
+    path: Assets/Scenes/LevelScenes/Start_Convo_Scene.unity
+    guid: af9d44000c72945918890e3dd675a302
+  - enabled: 1
+    path: Assets/Scenes/LevelScenes/Character_Run_Scene.unity
+    guid: 2a13e9724bb1e4db482346a9c5e43cfc
+  - enabled: 1
+    path: Assets/Scenes/LevelScenes/Helicopter_Scene.unity
+    guid: 3d3033eeacbef4f70a7f0071069e8304
+  - enabled: 1
+    path: Assets/Scenes/LevelScenes/Car_Scene.unity
     guid: 385b05825f5684f42bfb795b0eb79287
+  - enabled: 1
+    path: Assets/Scenes/LevelScenes/End_Scene.unity
+    guid: 82d8610a991904fe180bc9b2e19601dc
+  - enabled: 1
+    path: Assets/Scenes/LevelScenes/End_Manu.unity
+    guid: 6082767bfd88c4f488ee0f1b30b456e7
+  - enabled: 1
+    path: Assets/Scenes/LevelScenes/EndlessCar.unity
+    guid: 7dc837a7475324c09ab7a1dbefbfc6bc
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
