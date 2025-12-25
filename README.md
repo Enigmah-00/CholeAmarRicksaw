@@ -1,4 +1,4 @@
-# 🛺 Chole Amar Rickshaw
+# 🛺 APA Simulator
 
 [![Play on itch.io](https://img.shields.io/badge/Play-itch.io-FA5C5C?style=for-the-badge&logo=itch.io&logoColor=white)](https://enigmah-00.itch.io/apa-simulator)
 [![Unity](https://img.shields.io/badge/Unity-6-black?style=for-the-badge&logo=unity)](https://unity.com/)
@@ -12,7 +12,7 @@ Experience the thrill of driving a rickshaw through endless traffic, dodging obs
 
 ## 🎮 Play Now
 
-**► [Play Chole Amar Rickshaw on itch.io](https://enigmah-00.itch.io/apa-simulator)** ◄
+**► [Play APA Simulator on itch.io](https://enigmah-00.itch.io/apa-simulator)** ◄
 
 Available for **Windows**, **macOS**, **Linux**, and **Android** (WebGL coming soon!)
 
